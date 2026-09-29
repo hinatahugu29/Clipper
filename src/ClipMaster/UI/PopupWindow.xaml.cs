@@ -53,6 +53,7 @@ public partial class PopupWindow : Window
     {
         InitializeComponent();
         _db = db; _cfg = cfg; _images = images;
+        _outsideClickTimer.Tick += (_, _) => OutsideClickTick();
         List.SelectionChanged += (_, _) => { if (PreviewLayer.Visibility == Visibility.Visible) UpdatePreview(); };
     }
 
@@ -97,7 +98,9 @@ public partial class PopupWindow : Window
 
         _showGuardUntil = Environment.TickCount64 + 400;
         Show();
-        var ok = PasteService.ActivateWindow(hwnd);
+        _mouseWasDown = true; // 呼び出し時点で押されているボタンは無視（離してから次の押下を検知）
+        _outsideClickTimer.Start();
+        var ok =PasteService.ActivateWindow(hwnd);
         Diag.Log($"popup shown, foreground acquired={ok}");
         Activate();
         SearchBox.Focus();
@@ -109,7 +112,34 @@ public partial class PopupWindow : Window
         if (_hiding) return;
         _hiding = true;
         SetPinned(false); // 次回の呼び出しは通常動作に戻す
+        _outsideClickTimer.Stop();
         Hide();
+    }
+
+    // フォーカス喪失(Deactivated)に頼らず、枠外クリックを直接検知する保険。
+    // 呼び出し時に前面化できなかった場合など、Deactivated が発火しなくても閉じられる。
+    private readonly System.Windows.Threading.DispatcherTimer _outsideClickTimer =
+        new() { Interval = TimeSpan.FromMilliseconds(30) };
+    private bool _mouseWasDown;
+
+    private void OutsideClickTick()
+    {
+        bool down = (NativeMethods.GetAsyncKeyState(0x01) & 0x8000) != 0   // 左
+                 || (NativeMethods.GetAsyncKeyState(0x02) & 0x8000) != 0   // 右
+                 || (NativeMethods.GetAsyncKeyState(0x04) & 0x8000) != 0;  // 中
+        bool pressed = down && !_mouseWasDown;
+        _mouseWasDown = down;
+        if (!pressed || _hiding || !IsVisible || IsPinned) return;
+        if (Environment.TickCount64 < _showGuardUntil) return;
+
+        NativeMethods.GetCursorPos(out var p);
+        var scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        var origin = PointToScreen(new Point(0, 0));
+        // 影の余白(Margin=8)を除いた見た目の枠で判定する
+        double m = 8 * scale;
+        bool inside = p.X >= origin.X + m && p.X <= origin.X + ActualWidth * scale - m
+                   && p.Y >= origin.Y + m && p.Y <= origin.Y + ActualHeight * scale - m;
+        if (!inside) HidePopup();
     }
 
     /// <summary>ピン中で背面にあるポップアップを、再びアクティブにする。</summary>
