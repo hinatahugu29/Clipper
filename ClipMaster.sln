@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{14835F18-D00B-4FF4-8094-4BAD44B0AACF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipMaster", "src\ClipMaster\ClipMaster.csproj", "{C96812CB-CF3E-4D7D-8377-47331250C9AA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1C3A5AB3-CDE4-4192-A248-4CCAAD96D083}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipMaster.Tests", "tests\ClipMaster.Tests\ClipMaster.Tests.csproj", "{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C96812CB-CF3E-4D7D-8377-47331250C9AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C96812CB-CF3E-4D7D-8377-47331250C9AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C96812CB-CF3E-4D7D-8377-47331250C9AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C96812CB-CF3E-4D7D-8377-47331250C9AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C96812CB-CF3E-4D7D-8377-47331250C9AA} = {14835F18-D00B-4FF4-8094-4BAD44B0AACF}
+		{7004EF4B-3AAB-4ED9-9A4A-EF834508FCBF} = {1C3A5AB3-CDE4-4192-A248-4CCAAD96D083}
+	EndGlobalSection
+EndGlobal

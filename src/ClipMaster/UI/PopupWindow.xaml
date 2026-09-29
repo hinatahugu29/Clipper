@@ -1,0 +1,161 @@
+<Window x:Class="ClipMaster.UI.PopupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ClipMaster" Width="520" Height="460"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
+        FontFamily="Yu Gothic UI, Segoe UI" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        PreviewKeyDown="Window_PreviewKeyDown" Deactivated="Window_Deactivated">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="B2V"/>
+        <SolidColorBrush x:Key="Bg" Color="#FF1F2023"/>
+        <SolidColorBrush x:Key="Bg2" Color="#FF2A2C30"/>
+        <SolidColorBrush x:Key="Fg" Color="#FFE8E8EA"/>
+        <SolidColorBrush x:Key="FgDim" Color="#FF9A9DA5"/>
+        <SolidColorBrush x:Key="Accent" Color="#FF3B78C4"/>
+
+        <Style x:Key="TabBtn" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource FgDim}"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" CornerRadius="6" Padding="12,5" Margin="0,0,6,0" Background="Transparent">
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource Accent}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF3A3D43"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsChecked" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource Accent}"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RowItem" TargetType="ListBoxItem">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="b" CornerRadius="6" Margin="4,1" Padding="6,5" Background="Transparent">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF2F3237"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF2F5B93"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource Bg}" BorderBrush="#FF3C3F45" BorderThickness="1" CornerRadius="10" Margin="8">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.5"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="10,10,10,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="HistoryTab" Style="{StaticResource TabBtn}" IsChecked="True" Content="履歴" Checked="Tab_Checked"/>
+                    <RadioButton x:Name="SnippetTab" Style="{StaticResource TabBtn}" Content="定型文" Checked="Tab_Checked"/>
+                </StackPanel>
+                <Border Grid.Column="1" Margin="10,0,0,0" Background="{StaticResource Bg2}" CornerRadius="6" Padding="8,0">
+                    <Grid>
+                        <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                                 Foreground="{StaticResource Fg}" CaretBrush="White"
+                                 VerticalContentAlignment="Center" Height="28" TextChanged="SearchBox_TextChanged"/>
+                        <TextBlock Text="🔍 検索 (Ctrl+F)" Foreground="{StaticResource FgDim}" IsHitTestVisible="False"
+                                   VerticalAlignment="Center" Margin="2,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text.Length, ElementName=SearchBox}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <ListBox x:Name="List" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                     Foreground="{StaticResource Fg}" ItemContainerStyle="{StaticResource RowItem}"
+                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     PreviewMouseLeftButtonUp="List_PreviewMouseLeftButtonUp">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Number}" Foreground="{StaticResource FgDim}" VerticalAlignment="Center" FontSize="11"/>
+                            <Grid Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center">
+                                <Border Visibility="{Binding HasThumb, Converter={StaticResource B2V}}"
+                                        Background="#FF16171A" CornerRadius="4" Width="72" Height="54" ClipToBounds="True">
+                                    <Image Source="{Binding Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                </Border>
+                                <TextBlock Text="{Binding Icon}" FontSize="16" Width="24" TextAlignment="Center"
+                                           Visibility="{Binding ShowIcon, Converter={StaticResource B2V}}"/>
+                            </Grid>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Fg}"/>
+                                <TextBlock Text="{Binding Meta}" Foreground="{StaticResource FgDim}" FontSize="11" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- プレビュー（Space で開閉）: 画像は大きく、テキストは全文を表示 -->
+            <Border x:Name="PreviewLayer" Grid.Row="1" Visibility="Collapsed" Margin="6,0,6,4"
+                    Background="#F2191A1D" CornerRadius="8" BorderBrush="#FF3C3F45" BorderThickness="1">
+                <Grid>
+                    <Image x:Name="PreviewImage" Stretch="Uniform" Margin="8" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <ScrollViewer x:Name="PreviewTextScroll" VerticalScrollBarVisibility="Auto" Margin="4" Visibility="Collapsed">
+                        <TextBlock x:Name="PreviewText" TextWrapping="Wrap" Margin="8" Foreground="{StaticResource Fg}"/>
+                    </ScrollViewer>
+                    <TextBlock x:Name="PreviewInfo" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,12,8"
+                               Foreground="{StaticResource FgDim}" FontSize="11"/>
+                </Grid>
+            </Border>
+
+            <TextBlock Grid.Row="2" Margin="12,6,12,9" Foreground="{StaticResource FgDim}" FontSize="11"
+                       Text="[↑↓] 選択 [Enter/1-9] 貼付 [Shift+Enter] コピーのみ [Space] プレビュー [Del] 削除 [Tab] 切替 [Esc] 閉じる"/>
+        </Grid>
+    </Border>
+</Window>
