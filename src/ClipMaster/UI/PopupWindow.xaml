@@ -120,7 +120,8 @@
                      Foreground="{StaticResource Fg}" ItemContainerStyle="{StaticResource RowItem}"
                      VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     PreviewMouseLeftButtonUp="List_PreviewMouseLeftButtonUp">
+                     PreviewMouseLeftButtonUp="List_PreviewMouseLeftButtonUp"
+                     PreviewMouseRightButtonUp="List_PreviewMouseRightButtonUp">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid>
@@ -160,7 +161,7 @@
                 </Grid>
             </Border>
 
-            <TextBlock Grid.Row="2" Margin="12,6,12,9" Foreground="{StaticResource FgDim}" FontSize="11"
+            <TextBlock x:Name="HintText" Grid.Row="2" Margin="12,6,12,9" Foreground="{StaticResource FgDim}" FontSize="11"
                        Text="[↑↓] 選択 [Enter/1-9] 貼付 [Shift+Enter] コピーのみ [Space] プレビュー [Del] 削除 [Tab] 切替 [Ctrl+P] ピン [Esc] 閉じる"/>
         </Grid>
     </Border>

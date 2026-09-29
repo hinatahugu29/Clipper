@@ -129,7 +129,7 @@ public partial class PopupWindow : Window
                  || (NativeMethods.GetAsyncKeyState(0x04) & 0x8000) != 0;  // 中
         bool pressed = down && !_mouseWasDown;
         _mouseWasDown = down;
-        if (!pressed || _hiding || !IsVisible || IsPinned) return;
+        if (!pressed || _hiding || !IsVisible || IsPinned || _menuOpen) return;
         if (Environment.TickCount64 < _showGuardUntil) return;
 
         NativeMethods.GetCursorPos(out var p);
@@ -333,8 +333,69 @@ public partial class PopupWindow : Window
         }
     }
 
+    // ---- 右クリックメニュー（履歴の行） ----
+    private bool _menuOpen;
+
+    private void List_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var dep = e.OriginalSource as DependencyObject;
+        while (dep != null && dep is not ListBoxItem) dep = VisualTreeHelper.GetParent(dep);
+        if (dep is not ListBoxItem { Content: PopupRow row } lbi) return;
+        lbi.IsSelected = true;
+        e.Handled = true;
+
+        var menu = new ContextMenu();
+        var del = new MenuItem { Header = "削除" };
+        del.Click += (_, _) =>
+        {
+            int keep = List.SelectedIndex;
+            if (row.Item != null) DeleteRequested?.Invoke(row.Item);
+            else if (row.Snippet != null) _db.DeleteSnippet(row.Snippet.Id);
+            Refresh();
+            if (List.Items.Count > 0) List.SelectedIndex = Math.Min(keep, List.Items.Count - 1);
+        };
+        if (row.Item is { } item)
+        {
+            var reg = new MenuItem { Header = "定型文に登録", IsEnabled = !item.IsImage };
+            reg.Click += (_, _) => RegisterAsSnippet(item);
+            menu.Items.Add(reg);
+        }
+        menu.Items.Add(del);
+        // メニュー操作中は「枠外クリック」「フォーカス喪失」でポップアップを閉じない
+        menu.Opened += (_, _) => _menuOpen = true;
+        menu.Closed += (_, _) => { _menuOpen = false; SearchBox.Focus(); };
+        menu.PlacementTarget = lbi;
+        menu.IsOpen = true;
+    }
+
+    private void RegisterAsSnippet(ClipItem item)
+    {
+        var text = _db.GetItem(item.Id)?.Text ?? item.Text ?? "";
+        if (string.IsNullOrWhiteSpace(text)) { Flash("空の内容は登録できません"); return; }
+        if (_db.GetSnippets().Any(s => s.Body == text)) { Flash("同じ内容の定型文がすでにあります"); return; }
+
+        var first = text.Replace("\r", "").Split('\n').First(l => l.Trim().Length > 0).Trim();
+        var title = first.Length > 40 ? first[..40] : first;
+        _db.SaveSnippet(new Snippet { Title = title, Body = text });
+        Flash($"定型文に登録しました: {title}");
+    }
+
+    private string? _hintOriginal;
+    private System.Windows.Threading.DispatcherTimer? _flashTimer;
+
+    private void Flash(string message)
+    {
+        _hintOriginal ??= HintText.Text;
+        HintText.Text = "✔ " + message;
+        _flashTimer?.Stop();
+        _flashTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+        _flashTimer.Tick += (_, _) => { _flashTimer!.Stop(); HintText.Text = _hintOriginal; _hintOriginal = null; };
+        _flashTimer.Start();
+    }
+
     private void Window_Deactivated(object? sender, EventArgs e)
     {
+        if (_menuOpen) return;
         Diag.Log($"popup deactivated; fg=0x{NativeMethods.GetForegroundWindow():X} guard={Environment.TickCount64 < _showGuardUntil}");
         if (Environment.TickCount64 < _showGuardUntil)
         {
