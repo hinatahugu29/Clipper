@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using ClipMaster.Data;
+using ClipMaster.Services;
 
 namespace ClipMaster.UI;
 
@@ -33,6 +34,15 @@ public sealed class SnippetEditorWindow : Window
         newBtn.Click += (_, _) => { _list.SelectedItem = null; Load(new Snippet()); _title.Focus(); };
         DockPanel.SetDock(newBtn, Dock.Top);
         left.Children.Add(newBtn);
+        var ioPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+        var impBtn = new Button { Content = "インポート", Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 0) };
+        var expBtn = new Button { Content = "エクスポート", Padding = new Thickness(8, 3, 8, 3) };
+        impBtn.Click += (_, _) => Import();
+        expBtn.Click += (_, _) => Export();
+        ioPanel.Children.Add(impBtn);
+        ioPanel.Children.Add(expBtn);
+        DockPanel.SetDock(ioPanel, Dock.Bottom);
+        left.Children.Add(ioPanel);
         left.Children.Add(_list);
         root.Children.Add(left);
 
@@ -107,6 +117,54 @@ public sealed class SnippetEditorWindow : Window
         var id = _db.SaveSnippet(_current);
         Reload();
         _list.SelectedItem = ((IEnumerable<Snippet>)_list.ItemsSource).FirstOrDefault(x => x.Id == id);
+    }
+
+    private const string FileFilter = "CSV (*.csv)|*.csv|テキスト (*.txt)|*.txt";
+
+    private void Export()
+    {
+        var items = _db.GetSnippets();
+        if (items.Count == 0)
+        {
+            MessageBox.Show(this, "エクスポートする定型文がありません。", "ClipMaster", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dlg = new Microsoft.Win32.SaveFileDialog { Filter = FileFilter, FileName = "snippets", DefaultExt = ".csv" };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            SnippetIO.Export(dlg.FileName, items);
+            MessageBox.Show(this, $"{items.Count} 件をエクスポートしました。", "ClipMaster", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "エクスポートに失敗しました。\n" + ex.Message, "ClipMaster", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void Import()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = FileFilter };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var existing = _db.GetSnippets()
+                .Select(s => (s.Category, s.Title, s.Body)).ToHashSet();
+            int added = 0, skipped = 0;
+            foreach (var s in SnippetIO.Import(dlg.FileName))
+            {
+                if (!existing.Add((s.Category, s.Title, s.Body))) { skipped++; continue; }
+                _db.SaveSnippet(s);
+                added++;
+            }
+            Reload();
+            MessageBox.Show(this, $"{added} 件を追加しました（重複 {skipped} 件はスキップ）。", "ClipMaster",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "インポートに失敗しました。\n" + ex.Message, "ClipMaster", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void Delete()
