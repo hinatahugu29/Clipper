@@ -60,6 +60,7 @@ public partial class App : Application
         _popup = new PopupWindow(_db, _cfg, _images);
         _popup.Chosen += OnChosen;
         _popup.DeleteRequested += it => _history.DeleteItem(it);
+        _popup.PinnedDeactivated += OnPinnedDeactivated;
         _popup.Prewarm();
 
         _hotkey = new HotkeyService(_msg);
@@ -123,10 +124,33 @@ public partial class App : Application
     // ---- 呼び出し ----
     private void OnTriggered()
     {
-        if (_popup.IsShown) { _popup.HidePopup(); return; }
+        if (_popup.IsShown)
+        {
+            if (_popup.IsPinned && !_popup.IsActive)
+            {
+                // ピン中に背面へ回っていた場合は、閉じずに呼び戻す（貼り付け先は現在のウィンドウ）
+                _paste.RememberForeground();
+                _popup.BringToFront();
+            }
+            else _popup.HidePopup();
+            return;
+        }
         _paste.RememberForeground();
         var (x, y) = _cfg.PopupAtCaret ? CaretOrCursor() : Cursor();
         _popup.ShowAtPixel(x, y);
+    }
+
+    /// <summary>ピン中に別ウィンドウへ移ったら、その窓を新しい貼り付け先として記録し直す。</summary>
+    private void OnPinnedDeactivated()
+    {
+        var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            // 貼り付け直後などフォーカス移動の途中や、自分自身が前面のときは記録しない
+            if (_popup.IsShown && !_popup.IsActive && _popup.IsPinned) _paste.RememberForeground();
+        };
+        t.Start();
     }
 
     private static (int, int) Cursor()

@@ -83,6 +83,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
                     <RadioButton x:Name="HistoryTab" Style="{StaticResource TabBtn}" IsChecked="True" Content="履歴" Checked="Tab_Checked"/>
@@ -107,6 +108,11 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Grid>
+                </Border>
+                <Border x:Name="PinButton" Grid.Column="2" Margin="6,0,0,0" CornerRadius="6" Padding="8,0"
+                        Background="{StaticResource Bg2}" Cursor="Hand" ToolTip="ピン留め (Ctrl+P): 他の場所をクリックしても閉じず、連続して貼り付けられます"
+                        MouseLeftButtonDown="PinButton_MouseLeftButtonDown">
+                    <TextBlock x:Name="PinIcon" Text="📌" VerticalAlignment="Center" FontSize="14" Opacity="0.45"/>
                 </Border>
             </Grid>
 
@@ -155,7 +161,7 @@
             </Border>
 
             <TextBlock Grid.Row="2" Margin="12,6,12,9" Foreground="{StaticResource FgDim}" FontSize="11"
-                       Text="[↑↓] 選択 [Enter/1-9] 貼付 [Shift+Enter] コピーのみ [Space] プレビュー [Del] 削除 [Tab] 切替 [Esc] 閉じる"/>
+                       Text="[↑↓] 選択 [Enter/1-9] 貼付 [Shift+Enter] コピーのみ [Space] プレビュー [Del] 削除 [Tab] 切替 [Ctrl+P] ピン [Esc] 閉じる"/>
         </Grid>
     </Border>
 </Window>

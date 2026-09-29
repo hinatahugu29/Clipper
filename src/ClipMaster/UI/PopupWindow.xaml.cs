@@ -41,6 +41,11 @@ public partial class PopupWindow : Window
 
     public event Action<PopupRow, bool>? Chosen;   // (row, paste)
     public event Action<ClipItem>? DeleteRequested;
+    /// <summary>ピン中にフォーカスを失った（貼り付け先が変わり得る）ときに通知する。</summary>
+    public event Action? PinnedDeactivated;
+
+    /// <summary>ピン留め中は、フォーカスを失っても貼り付けても閉じない。</summary>
+    public bool IsPinned { get; private set; }
 
     private readonly ImageStore _images;
 
@@ -103,7 +108,33 @@ public partial class PopupWindow : Window
     {
         if (_hiding) return;
         _hiding = true;
+        SetPinned(false); // 次回の呼び出しは通常動作に戻す
         Hide();
+    }
+
+    /// <summary>ピン中で背面にあるポップアップを、再びアクティブにする。</summary>
+    public void BringToFront()
+    {
+        var hwnd = new WindowInteropHelper(this).EnsureHandle();
+        _showGuardUntil = Environment.TickCount64 + 400;
+        PasteService.ActivateWindow(hwnd);
+        Activate();
+        SearchBox.Focus();
+        Keyboard.Focus(SearchBox);
+    }
+
+    private void SetPinned(bool on)
+    {
+        IsPinned = on;
+        PinIcon.Opacity = on ? 1.0 : 0.45;
+        PinButton.Background = on ? (Brush)FindResource("Accent") : (Brush)FindResource("Bg2");
+    }
+
+    private void PinButton_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        SetPinned(!IsPinned);
+        SearchBox.Focus();
+        e.Handled = true;
     }
 
     public void Refresh()
@@ -142,7 +173,7 @@ public partial class PopupWindow : Window
     private void Choose(bool paste)
     {
         if (List.SelectedItem is not PopupRow row) return;
-        HidePopup();
+        if (!IsPinned) HidePopup();
         Chosen?.Invoke(row, paste);
     }
 
@@ -170,6 +201,7 @@ public partial class PopupWindow : Window
             case Key.Tab:
                 (_snippetMode ? HistoryTab : SnippetTab).IsChecked = true;
                 e.Handled = true; break;
+            case Key.P when ctrl: SetPinned(!IsPinned); e.Handled = true; break;
             case Key.F when ctrl: _forceSearch = true; SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true; break;
             case Key.Delete when ctrl || SearchBox.Text.Length == 0:
                 if (!_snippetMode && List.SelectedItem is PopupRow { Item: { } it })
@@ -285,6 +317,11 @@ public partial class PopupWindow : Window
                 SearchBox.Focus();
                 Keyboard.Focus(SearchBox);
             }, System.Windows.Threading.DispatcherPriority.Background);
+            return;
+        }
+        if (IsPinned)
+        {
+            PinnedDeactivated?.Invoke();
             return;
         }
         HidePopup();
