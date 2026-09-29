@@ -120,6 +120,7 @@
                      Foreground="{StaticResource Fg}" ItemContainerStyle="{StaticResource RowItem}"
                      VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     PreviewMouseMove="List_PreviewMouseMove"
                      PreviewMouseLeftButtonUp="List_PreviewMouseLeftButtonUp"
                      PreviewMouseRightButtonUp="List_PreviewMouseRightButtonUp">
                 <ListBox.ItemTemplate>

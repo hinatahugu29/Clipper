@@ -79,6 +79,7 @@ public partial class PopupWindow : Window
         _snippetMode = false;
         _forceSearch = false;
         PreviewLayer.Visibility = Visibility.Collapsed;
+        _hoverRow = null; _mouseLast = false;
         HistoryTab.IsChecked = true;
         SearchBox.Text = "";
         Refresh();
@@ -169,6 +170,7 @@ public partial class PopupWindow : Window
 
     public void Refresh()
     {
+        _hoverRow = null;
         var search = SearchBox.Text;
         var rows = new List<PopupRow>();
         if (_snippetMode)
@@ -193,6 +195,7 @@ public partial class PopupWindow : Window
 
     private void SelectDelta(int delta)
     {
+        _mouseLast = false;
         int n = List.Items.Count;
         if (n == 0) return;
         int i = Math.Clamp((List.SelectedIndex < 0 ? 0 : List.SelectedIndex) + delta, 0, n - 1);
@@ -256,10 +259,26 @@ public partial class PopupWindow : Window
         return index >= 0;
     }
 
+    // プレビュー対象: 最後に動かした入力（マウス or キーボード）を優先する
+    private PopupRow? _hoverRow;
+    private bool _mouseLast;
+
+    private PopupRow? PreviewTarget() => _mouseLast && _hoverRow != null ? _hoverRow : List.SelectedItem as PopupRow;
+
+    private void List_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        var dep = e.OriginalSource as DependencyObject;
+        while (dep != null && dep is not ListBoxItem) dep = VisualTreeHelper.GetParent(dep);
+        if ((dep as ListBoxItem)?.Content is not PopupRow row) return;
+        if (ReferenceEquals(row, _hoverRow) && _mouseLast) return;
+        _hoverRow = row; _mouseLast = true;
+        if (PreviewLayer.Visibility == Visibility.Visible) UpdatePreview();
+    }
+
     private void TogglePreview()
     {
         if (PreviewLayer.Visibility == Visibility.Visible) { PreviewLayer.Visibility = Visibility.Collapsed; return; }
-        if (List.SelectedItem == null) return;
+        if (PreviewTarget() == null) return;
         PreviewLayer.Visibility = Visibility.Visible;
         UpdatePreview();
     }
@@ -267,7 +286,7 @@ public partial class PopupWindow : Window
     /// <summary>選択中の項目を大きく表示する。画像は原寸から、テキストは全文（先頭2万文字まで）。</summary>
     private void UpdatePreview()
     {
-        if (List.SelectedItem is not PopupRow row) { PreviewLayer.Visibility = Visibility.Collapsed; return; }
+        if (PreviewTarget() is not { } row) { PreviewLayer.Visibility = Visibility.Collapsed; return; }
 
         if (row.Item is { IsImage: true } img)
         {
