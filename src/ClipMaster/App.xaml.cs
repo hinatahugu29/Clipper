@@ -184,6 +184,8 @@ public partial class App : Application
             {
                 var full = row.Item.IsImage ? row.Item : _db.GetItem(row.Item.Id) ?? row.Item; // 一覧は先頭プレビューのみ
                 await _paste.SendAsync(full, paste);
+                _db.Touch(row.Item.Id); // 使った履歴は先頭へ（よく使うものほど上）
+                if (_popup.IsShown) _popup.Refresh(); // ピン留め中は一覧に反映
             }
             else if (row.Snippet != null)
                 await _paste.SendTextAsync(SnippetExpander.Expand(row.Snippet.Body, _cfg), paste);

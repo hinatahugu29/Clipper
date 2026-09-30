@@ -38,6 +38,20 @@ public class DatabaseTests
     }
 
     [Fact]
+    public void Touch_MovesUsedItemToTop()
+    {
+        using var t = new TempDir(); using var db = Open(t);
+        var a = db.Upsert(ItemKind.Text, "A", "ha", 0, 0, 1);
+        db.Upsert(ItemKind.Text, "B", "hb", 0, 0, 1);
+
+        db.Touch(a); // A を使用
+
+        var items = db.GetItems();
+        Assert.Equal(2, items.Count);
+        Assert.Equal("A", items[0].Text);
+    }
+
+    [Fact]
     public void Trim_RemovesOldestPerKind_AndReportsFreedImageHashes()
     {
         using var t = new TempDir(); using var db = Open(t);

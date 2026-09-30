@@ -112,6 +112,16 @@ public sealed class Database : IDisposable
         }
     }
 
+    /// <summary>使用した項目を先頭へ移動する（created_at を「最後に使った時刻」として更新）。</summary>
+    public void Touch(long id)
+    {
+        lock (_lock)
+        {
+            Exec("UPDATE items SET created_at=$c WHERE id=$i",
+                 ("$c", NextStamp()), ("$i", id));
+        }
+    }
+
     private long _lastStamp;
     private long NextStamp()
     {
