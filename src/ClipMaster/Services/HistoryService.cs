@@ -70,25 +70,41 @@ public sealed class HistoryService
     {
         if (IsExcluded()) return false;
 
+        // 画像とテキストが同時にある場合(Excel等)は両方を別項目で保存する。
+        // 先にテキストを入れ、画像を後にして画像が先頭(最新)に来るようにする。
+        string? text = ReadText();
         byte[]? png = ReadPng();
+        bool stored = false;
+
+        if (text != null)
+        {
+            _db.Upsert(ItemKind.Text, text, ImageStore.Sha256(text), 0, 0, text.Length);
+            stored = true;
+        }
         if (png != null)
         {
             var (hash, w, h) = _images.Save(png);
             _db.Upsert(ItemKind.Image, null, hash, w, h, png.LongLength);
-            Trim();
-            return true;
+            stored = true;
+        }
+        if (stored) Trim();
+        return stored;
+    }
+
+    /// <summary>テキストを返す。無ければエクスプローラ等のファイルコピーをパス一覧(改行区切り)にする。</summary>
+    private string? ReadText()
+    {
+        string? text = null;
+        if (Clipboard.ContainsText()) text = Clipboard.GetText();
+        else if (Clipboard.ContainsFileDropList())
+        {
+            var files = Clipboard.GetFileDropList();
+            if (files.Count > 0) text = string.Join(Environment.NewLine, files.Cast<string>());
         }
 
-        if (Clipboard.ContainsText())
-        {
-            var text = Clipboard.GetText();
-            if (string.IsNullOrEmpty(text) || text.Trim().Length == 0) return false;
-            if (text.Length > _cfg.MaxTextChars) { Diag.Log($"text too long ({text.Length}), skipped"); return false; }
-            _db.Upsert(ItemKind.Text, text, ImageStore.Sha256(text), 0, 0, text.Length);
-            Trim();
-            return true;
-        }
-        return false;
+        if (string.IsNullOrEmpty(text) || text.Trim().Length == 0) return null;
+        if (text.Length > _cfg.MaxTextChars) { Diag.Log($"text too long ({text.Length}), skipped"); return null; }
+        return text;
     }
 
     /// <summary>パスワードマネージャー等が付ける「履歴に残さない」指定を尊重する。</summary>
