@@ -5,11 +5,11 @@ namespace ClipMaster.Services;
 /// <summary>環境変数 CLIPMASTER_DEBUG=1 のときだけ診断ログを書く。</summary>
 public static class Diag
 {
-    private static readonly bool On = Environment.GetEnvironmentVariable("CLIPMASTER_DEBUG") == "1";
+    public static readonly bool Enabled = Environment.GetEnvironmentVariable("CLIPMASTER_DEBUG") == "1";
 
     public static void Log(string msg)
     {
-        if (!On) return;
+        if (!Enabled) return;
         try
         {
             Directory.CreateDirectory(AppConfig.DefaultRoot);

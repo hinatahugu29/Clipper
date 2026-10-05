@@ -53,6 +53,7 @@ public sealed class ClipItem
             if (!IsImage || _thumbTried) return _thumb;
             if (ThumbCache.TryGetValue(Hash, out var cached)) { _thumbTried = true; return _thumb = cached; }
             _thumbTried = true;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 if (ThumbPath != null && File.Exists(ThumbPath))
@@ -70,6 +71,7 @@ public sealed class ClipItem
                 }
             }
             catch { /* 保管先アクセス不能などは空表示 */ }
+            if (sw.ElapsedMilliseconds >= 5) ClipMaster.Services.Diag.Log($"thumb load {sw.ElapsedMilliseconds}ms");
             return _thumb;
         }
     }

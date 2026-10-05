@@ -75,6 +75,7 @@ public partial class PopupWindow : Window
 
     public void ShowAtPixel(int x, int y)
     {
+        var swShow = System.Diagnostics.Stopwatch.StartNew();
         _hiding = false;
         _snippetMode = false;
         _forceSearch = false;
@@ -102,7 +103,7 @@ public partial class PopupWindow : Window
         _mouseWasDown = true; // 呼び出し時点で押されているボタンは無視（離してから次の押下を検知）
         _outsideClickTimer.Start();
         var ok =PasteService.ActivateWindow(hwnd);
-        Diag.Log($"popup shown, foreground acquired={ok}");
+        Diag.Log($"popup shown, foreground acquired={ok}, ShowAtPixel total={swShow.ElapsedMilliseconds}ms");
         Activate();
         SearchBox.Focus();
         Keyboard.Focus(SearchBox);
@@ -171,23 +172,34 @@ public partial class PopupWindow : Window
     public void Refresh()
     {
         _hoverRow = null;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var search = SearchBox.Text;
         var rows = new List<PopupRow>();
+        long tDb = 0;
         if (_snippetMode)
         {
             foreach (var s in _db.GetSnippets(search)) rows.Add(new PopupRow { Snippet = s });
         }
         else
         {
-            foreach (var i in _db.GetItems(search))
+            var items = _db.GetItems(search);
+            tDb = sw.ElapsedMilliseconds;
+            foreach (var i in items)
             {
                 if (i.IsImage) { i.ImagePath = _images.ImagePath(i.Hash); i.ThumbPath = _images.ThumbPath(i.Hash); }
                 rows.Add(new PopupRow { Item = i });
             }
         }
         for (int n = 0; n < rows.Count; n++) rows[n].Number = n + 1;
+        var tRows = sw.ElapsedMilliseconds;
         List.ItemsSource = rows;
         if (rows.Count > 0) List.SelectedIndex = 0;
+        if (Diag.Enabled)
+        {
+            var tBind = sw.ElapsedMilliseconds;
+            if (IsVisible) UpdateLayout(); // 行の生成・サムネイル読込をここで確定させて計測
+            Diag.Log($"Refresh rows={rows.Count} search={(search.Length > 0)} db={tDb}ms rows={tRows - tDb}ms bind={tBind - tRows}ms layout={sw.ElapsedMilliseconds - tBind}ms total={sw.ElapsedMilliseconds}ms");
+        }
 
         HistoryTab.Content = $"履歴 ({_db.Count(ItemKind.Text) + _db.Count(ItemKind.Image)})";
         SnippetTab.Content = "定型文";
